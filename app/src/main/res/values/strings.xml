@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Tic Tac Toe Application</string>
+
+    <!-- AdMob App ID and Ad Unit IDs (Test IDs) -->
+    <string name="admob_app_id">ca-app-pub-7294913884421131~8117655594</string>
+    <string name="banner_ad_unit_id">ca-app-pub-7294913884421131/4783925563</string>
+    <string name="app_open_ad_unit_id">ca-app-pub-7294913884421131/6835373830 </string>
+    <string name="interstitial_ad_unit_id"> ca-app-pub-7294913884421131/9788840238</string>
 </resources>

@@ -11,10 +11,20 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.*
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.tictactoeapplication.multiplayer.ConnectionManager
 import com.example.tictactoeapplication.ui.theme.TicTacToeApplicationTheme
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: GameViewModel by viewModels()
+    
+    private val viewModel: GameViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return GameViewModel(ConnectionManager(applicationContext)) as T
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()

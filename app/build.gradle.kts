@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -10,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.smartix.tictactoe"
         minSdk = 28
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 2
         versionName = "1.0.1"
 
@@ -45,6 +46,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.play.services.nearby)
+    implementation(libs.kotlinx.serialization.json)
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
 
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.navigation:navigation-compose:2.8.5")

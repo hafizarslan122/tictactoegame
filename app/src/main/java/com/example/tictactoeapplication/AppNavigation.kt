@@ -4,16 +4,20 @@ import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 sealed class Screen(val route: String) {
+    object Onboarding : Screen("onboarding")
     object Game : Screen("game")
     object Settings : Screen("settings")
     object Share : Screen("share")
@@ -34,8 +39,22 @@ sealed class Screen(val route: String) {
 @Composable
 fun AppNavigation(viewModel: GameViewModel) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE) }
+    val isOnboardingCompleted = remember { prefs.getBoolean("onboarding_completed", false) }
 
-    NavHost(navController = navController, startDestination = Screen.Game.route) {
+    NavHost(
+        navController = navController,
+        startDestination = if (isOnboardingCompleted) Screen.Game.route else Screen.Onboarding.route
+    ) {
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(onFinished = {
+                prefs.edit().putBoolean("onboarding_completed", true).apply()
+                navController.navigate(Screen.Game.route) {
+                    popUpTo(Screen.Onboarding.route) { inclusive = true }
+                }
+            })
+        }
         composable(Screen.Game.route) {
             GameScreenContainer(
                 viewModel = viewModel,
@@ -83,6 +102,9 @@ fun GameScreenContainer(
                     }
                 }
             )
+        },
+        bottomBar = {
+            BannerAdView()
         }
     ) { innerPadding ->
         TicTacToeScreen(
@@ -103,15 +125,18 @@ fun SettingsScreen(
     onNavigateToShare: () -> Unit
 ) {
     val state = viewModel.state
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         }
     ) { padding ->
@@ -121,12 +146,7 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            Text(
-                "Appearance",
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            SettingsSectionTitle("Appearance")
 
             ListItem(
                 headlineContent = { Text("Dark Mode") },
@@ -136,7 +156,8 @@ fun SettingsScreen(
                 leadingContent = {
                     Icon(
                         if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                        contentDescription = null
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 trailingContent = {
@@ -149,39 +170,9 @@ fun SettingsScreen(
                 }
             )
 
-            HorizontalDivider()
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), thickness = 0.5.dp)
 
-            Text(
-                "Game Options",
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            ListItem(
-                headlineContent = { Text("Game Mode") },
-                supportingContent = {
-                    Text(if (state.gameMode == GameMode.VS_AI) "Playing against AI" else "2 Players Mode")
-                },
-                trailingContent = {
-                    Switch(
-                        checked = state.gameMode == GameMode.VS_AI,
-                        onCheckedChange = { isChecked ->
-                            val mode = if (isChecked) GameMode.VS_AI else GameMode.TWO_PLAYERS
-                            viewModel.onAction(GameAction.SelectMode(mode))
-                        }
-                    )
-                }
-            )
-
-            HorizontalDivider()
-
-            Text(
-                "Information",
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            SettingsSectionTitle("Information")
 
             SettingsItem(
                 icon = Icons.AutoMirrored.Filled.Help,
@@ -203,15 +194,36 @@ fun SettingsScreen(
                 title = "Privacy Policy",
                 onClick = onNavigateToPrivacy
             )
+
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Made with ❤️ for Gamers",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+fun SettingsSectionTitle(title: String) {
+    Text(
+        text = title,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
 }
 
 @Composable
 fun SettingsItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
-        leadingContent = { Icon(icon, contentDescription = null) },
+        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         headlineContent = { Text(title) },
         trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) }
     )
@@ -250,9 +262,9 @@ fun HowToPlayScreen(onBack: () -> Unit) {
                 "The goal of Tic Tac Toe is to be the first player to get three of your marks in a row (horizontally, vertically, or diagonally) on a 3x3 grid.",
                 style = MaterialTheme.typography.bodyLarge
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Text(
                 "Rules",
                 style = MaterialTheme.typography.titleLarge,
@@ -261,10 +273,10 @@ fun HowToPlayScreen(onBack: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             val rules = listOf(
-                "The game is played on a grid that's 3 squares by 3 squares.",
-                "You are 'X', your friend (or the AI) is 'O'. Players take turns putting their marks in empty squares.",
-                "The first player to get 3 of her marks in a row (up, down, across, or diagonally) is the winner.",
-                "When all 9 squares are full, the game is over. If no player has 3 in a row, the game ends in a tie (Draw)."
+                "The game is played on a 3x3 grid.",
+                "Player 1 is 'X' and Player 2 (or AI) is 'O'. Players take turns placing their marks in empty squares.",
+                "The first player to get 3 marks in a row (horizontally, vertically, or diagonally) wins.",
+                "If all 9 squares are filled and no player has 3 in a row, the game is a draw."
             )
             
             rules.forEachIndexed { index, rule ->
@@ -284,8 +296,9 @@ fun HowToPlayScreen(onBack: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "• 2 Players: Play against a friend on the same device.\n" +
-                "• Play with AI: Challenge our smart computer opponent.",
+                "• 2 Players: Play with a friend on the same device.\n" +
+                "• Versus AI: Challenge the computer and test your skills.\n" +
+                "• Local Multiplayer: Play with a friend on another device using Nearby Connections. One player must 'Host' and the other must 'Join'.",
                 style = MaterialTheme.typography.bodyLarge
             )
         }
@@ -372,36 +385,96 @@ fun AboutScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Surface(
+                modifier = Modifier.size(120.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                tonalElevation = 4.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Grid3x3,
+                        contentDescription = null,
+                        modifier = Modifier.size(72.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
                 "Tic Tac Toe Master",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            Text("Version 1.0.0", style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "About the Game",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Tic Tac Toe is a classic two-player strategy game designed for fun and quick gameplay. Challenge your friends or test your skills against the computer in this simple yet engaging game.\n" +
-                        "\n" +
-                        "Features:\n" +
-                        "\n" +
-                        "Play against AI or another player\n" +
-                        "Clean and user-friendly interface\n" +
-                        "Smooth gameplay experience\n" +
-                        "Lightweight and fast performance\n" +
-                        "\n" +
-                        "Developed to provide a fun and relaxing gaming experience for players of all ages.",
-                style = MaterialTheme.typography.bodyLarge
-            )
+
+            Surface(
+                modifier = Modifier.padding(top = 8.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Text(
+                    "Version 1.0.1",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        "About the Game",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        "Tic Tac Toe Master is a premium strategy experience designed with Material 3 principles. It offers a seamless way to play the classic game with friends or against a challenging AI.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 26.sp
+                    )
+
+                    val features = listOf(
+                        "• Intelligent AI with multiple difficulty patterns",
+                        "• Seamless Local Multiplayer via Nearby Connections",
+                        "• Modern Material You design with dynamic colors",
+                        "• Zero advertisements and lightning-fast performance",
+                        "• Fully responsive for all screen sizes"
+                    )
+
+                    features.forEach { feature ->
+                        Text(
+                            text = feature,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -435,11 +508,12 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "1. Information Collection: We do not collect any personal information. All game data is stored locally on your device.\n\n" +
-                "2. Permissions: This app does not require any special permissions to run.\n\n" +
-                "3. Third-party Services: We do not share any data with third-party services.\n\n" +
-                "4. Children's Privacy: Our game is safe for children and does not collect any data from them.\n\n" +
-                "5. Changes to This Policy: We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.",
+                "1. Information Collection: We do not collect, store, or transmit any personal information. All game progress and settings are stored locally on your device.\n\n" +
+                "2. Permissions: This app requires Bluetooth and Location permissions solely to enable the 'Local Multiplayer' feature. These permissions allow your device to discover and connect to nearby players. We do not use these permissions to track your location or access personal data.\n\n" +
+                "3. Nearby Connections: The multiplayer feature uses Google's Nearby Connections API to establish a peer-to-peer connection between devices. No game data is uploaded to any servers during this process.\n\n" +
+                "4. Third-party Services: We do not share any data with third-party services or advertisers.\n\n" +
+                "5. Children's Privacy: Our game is designed to be safe for all ages and strictly adheres to privacy standards by not collecting any data from users, including children.\n\n" +
+                "6. Changes to This Policy: Any updates to our Privacy Policy will be reflected on this page. Your continued use of the app constitutes acceptance of any changes.",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
