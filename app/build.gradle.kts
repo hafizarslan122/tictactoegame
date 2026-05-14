@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.google.firebase.crashlytics)
 }
 
 android {
@@ -11,9 +13,9 @@ android {
     defaultConfig {
         applicationId = "com.smartix.tictactoe"
         minSdk = 28
-        targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        targetSdk = 36
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -62,4 +64,13 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+
+    // Firebase Cloud Messaging
+    implementation("com.google.firebase:firebase-messaging:25.0.1")
+//    native rate us playstore review
+    implementation("com.google.android.play:review:2.0.2")
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
 }

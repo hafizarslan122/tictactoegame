@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.smartix.tictactoe" />
+                  <option name="mobileSdkAppId" value="1:362057655989:android:2fdfd378e0fe5b4f4540fc" />
+                  <option name="projectId" value="tic-tac-toe-9a600" />
+                  <option name="projectNumber" value="362057655989" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
