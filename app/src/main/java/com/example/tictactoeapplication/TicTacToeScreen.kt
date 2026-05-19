@@ -124,25 +124,25 @@ fun TicTacToeScreen(
             exit = fadeOut() + shrinkVertically()
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Icon(
                     imageVector = Icons.Rounded.Grid3x3,
                     contentDescription = null,
-                    modifier = Modifier.size(80.dp),
+                    modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = "Tic Tac Toe",
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = "Master the Grid",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
 
@@ -173,7 +173,7 @@ fun HomeLayout(
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "Select Game Mode",
@@ -214,25 +214,28 @@ fun HomeLayout(
             )
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        if (state.gameMode != GameMode.LOCAL_P2P) {
+            Spacer(modifier = Modifier.weight(1f))
 
-        Button(
-            onClick = { viewModel.onAction(GameAction.StartGame) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .height(56.dp),
-            enabled = state.gameMode != GameMode.LOCAL_P2P || state.connectionStatus.contains("Connected"),
-            shape = RoundedCornerShape(28.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-        ) {
-            Icon(Icons.Default.PlayArrow, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (state.gameMode == GameMode.LOCAL_P2P) "START MULTIPLAYER" else "START GAME",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Button(
+                onClick = { viewModel.onAction(GameAction.StartGame) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "START GAME",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Spacer(modifier = Modifier.height(16.dp))
         }
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -335,14 +338,14 @@ fun ModeCard(
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
@@ -377,6 +380,7 @@ fun NearbyControlsCard(
     onJoin: () -> Unit,
     onDisconnect: () -> Unit
 ) {
+    val isConnected = status.contains("Connected", ignoreCase = true)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -390,33 +394,60 @@ fun NearbyControlsCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                Text(text = "Status: $status", style = MaterialTheme.typography.bodyMedium)
+                Icon(
+                    imageVector = if (isConnected) Icons.Default.CheckCircle else Icons.Default.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = if (isConnected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Status: $status",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isConnected) FontWeight.Bold else FontWeight.Normal
+                )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = onHost,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+            if (!isConnected) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Host")
+                    Button(
+                        onClick = onHost,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Host")
+                    }
+                    Button(
+                        onClick = onJoin,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Join")
+                    }
+                    if (status != "Idle") {
+                        FilledIconButton(
+                            onClick = onDisconnect,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Disconnect", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 }
+            } else {
                 Button(
-                    onClick = onJoin,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Join")
-                }
-                FilledIconButton(
                     onClick = onDisconnect,
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Disconnect", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.LinkOff, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Disconnect")
                 }
             }
         }

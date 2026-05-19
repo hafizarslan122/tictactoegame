@@ -1,5 +1,6 @@
 package com.example.tictactoeapplication
 
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -421,7 +422,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.secondaryContainer
             ) {
                 Text(
-                    "Version 1.0.1",
+                    getAppVersion(context = LocalContext.current),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -460,7 +461,6 @@ fun AboutScreen(onBack: () -> Unit) {
                         "• Intelligent AI with multiple difficulty patterns",
                         "• Seamless Local Multiplayer via Nearby Connections",
                         "• Modern Material You design with dynamic colors",
-                        "• Zero advertisements and lightning-fast performance",
                         "• Fully responsive for all screen sizes"
                     )
 
@@ -517,5 +517,15 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium
             )
         }
+    }
+}
+
+
+fun getAppVersion(context: Context): String {
+    return try {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        packageInfo.versionName ?: "Unknown"
+    } catch (e: Exception) {
+        "Unknown"
     }
 }
